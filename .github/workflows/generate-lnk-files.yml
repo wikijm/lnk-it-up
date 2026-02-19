@@ -67,7 +67,7 @@ jobs:
             SPOOFEXE_OVERFLOWARGS_DISABLETARGET
 
       - name: Upload generated LNK files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: generated-lnk-files
           path: lnk-output/
